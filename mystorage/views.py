@@ -13,8 +13,8 @@ class MyPagination(PageNumberPagination):
     page_size = 2
 
 class PostViewSet(viewsets.ModelViewSet):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    authentication_classes = [SessionAuthentication,BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Essay.objects.all()
     serializer_class = EssaySerializer
     pagination_class = MyPagination
@@ -36,14 +36,46 @@ class PostViewSet(viewsets.ModelViewSet):
         return qs
 
 class ImgViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication,BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Album.objects.all()
     serializer_class = AlbumSerializer
+    pagination_class = MyPagination
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        if self.request.user.is_authenticated:
+            qs = qs.filter(author = self.request.user)
+        else:
+            qs = qs.none()
+        
+        return qs
+
+    
 class FileViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication,BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Files.objects.all()
     serializer_class = FileSerializer
-
+    pagination_class = MyPagination
     parser_classes = (MultiPartParser, FormParser)  #다양한 타입들의 파일을 수락하도록 설정
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        if self.request.user.is_authenticated:
+            qs = qs.filter(author = self.request.user)
+        else:
+            qs = qs.none()
+        
+        return qs
 
     def post(self, request, *args, **kwargs):
         serializer = FileSerializer(data = request.data)
